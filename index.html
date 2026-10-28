@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html data-fused-theme="shell">
+<head>
+<meta charset="utf-8" />
+<meta name="fused-app" />
+<meta name="fused-app-id" content="pin-remake-e9a8a2a1" />
+<meta name="fused-api-version" content="1" />
+<title>Pin Remake</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f1115; --panel: #14171d; --panel2: #1a1e26; --text: #dde3ea; --muted: #8b94a1; --line: #282e38;
+    --accent: #ff6a3d; --accent-ink: #ffffff; --hover: rgba(255,255,255,.05); --selbg: rgba(255,106,61,.15);
+    --stage: #0a0c0f; --danger: #ff6464; --ok: #4cc38a; --shadow: 0 10px 30px rgba(0,0,0,.45); --handle: #ffffff;
+    --scrim: rgba(0,0,0,.55);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f3f3f1; --panel: #fbfbfa; --panel2: #efefec; --text: #1b1e23; --muted: #646b76; --line: #dcdcd7;
+    --accent: #e0522c; --accent-ink: #ffffff; --hover: rgba(0,0,0,.045); --selbg: rgba(224,82,44,.12);
+    --stage: #e4e3df; --danger: #c93636; --ok: #1f8f5a; --shadow: 0 10px 30px rgba(0,0,0,.18); --handle: #ffffff;
+    --scrim: rgba(20,20,20,.35);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; }
+  button, input, select, textarea { font: inherit; color: inherit; margin: 0; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  ::placeholder { color: var(--muted); opacity: 1; }
+  input, select, textarea, progress { accent-color: var(--accent); }
+  img, svg, video, canvas { display: block; max-width: 100%; }
+
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; color: var(--text); background: var(--bg); overflow: hidden;
+  }
+  .scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  #app { display: grid; grid-template-columns: 236px minmax(0, 1fr) 300px; height: 100vh; }
+  #app[hidden] { display: none; }
+  aside { background: var(--panel); min-width: 0; display: flex; flex-direction: column; }
+  #side { border-right: 1px solid var(--line); }
+  #panel { border-left: 1px solid var(--line); }
+  .head { padding: 14px 14px 10px; font-weight: 700; font-size: 13px; letter-spacing: .02em; display: flex; align-items: center; gap: 8px; }
+  .head .sub { color: var(--muted); font-weight: 400; margin-left: auto; font-size: 11px; }
+
+  /* ---------- designs list */
+  #designs { flex: 1; padding: 0 8px 16px; }
+  .grp { margin-top: 10px; }
+  .grp-h { display: flex; align-items: baseline; gap: 6px; padding: 6px 6px 4px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .grp-h b { color: var(--text); font-weight: 600; letter-spacing: .02em; }
+  .row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 5px 6px; border-radius: 7px; text-align: left; min-width: 0; }
+  .row:hover { background: var(--hover); }
+  .row.on { background: var(--selbg); }
+  .row .t { min-width: 0; flex: 1; }
+  .row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .m { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row.indent { padding-left: 22px; }
+  .thumb { width: 38px; flex: none; border-radius: 3px; overflow: hidden; background: var(--panel2); box-shadow: 0 0 0 1px var(--line); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+  .empty { color: var(--muted); font-size: 12px; padding: 4px 6px 4px 22px; }
+
+  /* ---------- centre */
+  #center { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--stage); position: relative; }
+  #bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  #bar .title { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 160px; }
+  #dname { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dstate { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  #dstate.dirty { color: var(--accent); }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn { height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); white-space: nowrap; }
+  .btn:hover:not(:disabled) { border-color: var(--muted); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.ghost { background: none; }
+  .btn.small { height: 24px; padding: 0 8px; font-size: 12px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { height: 26px; padding: 0 10px; background: var(--panel2); border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--accent); color: var(--accent-ink); }
+  .cmp { display: flex; align-items: center; gap: 10px; }
+  .cmp label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  .cmp input[type=range] { width: 110px; }
+
+  #stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; gap: 24px; padding: 20px; overflow: hidden; }
+  .frame { position: relative; flex: none; box-shadow: var(--shadow); }
+  .poster { position: absolute; inset: 0; overflow: hidden; isolation: isolate; -webkit-user-select: none; user-select: none; touch-action: none; }
+  .poster .L { position: absolute; transform-origin: 50% 50%; }
+  .poster .k-image { overflow: hidden; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+  .poster .k-image img { width: 100%; height: 100%; max-width: none; pointer-events: none; }
+  .poster .L > svg { width: 100%; height: 100%; max-width: none; overflow: visible; pointer-events: none; }
+  .ghostimg { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; pointer-events: none; z-index: 5; }
+  .ghostimg[hidden] { display: none; }
+  .cap { position: absolute; top: -20px; left: 0; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .orig { position: relative; flex: none; box-shadow: var(--shadow); }
+  .orig img { width: 100%; height: 100%; max-width: none; }
+
+  .selwrap { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+  .selbox { position: absolute; outline: 1.5px solid var(--accent); transform-origin: 50% 50%; }
+  .selbox.locked { outline-style: dashed; }
+  .selbox.locked .h { display: none; }
+  .h { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; background: var(--handle); border: 1.5px solid var(--accent); border-radius: 2px; pointer-events: auto; }
+  .h[data-h=nw] { left: 0; top: 0; cursor: nwse-resize; } .h[data-h=n] { left: 50%; top: 0; cursor: ns-resize; }
+  .h[data-h=ne] { left: 100%; top: 0; cursor: nesw-resize; } .h[data-h=e] { left: 100%; top: 50%; cursor: ew-resize; }
+  .h[data-h=se] { left: 100%; top: 100%; cursor: nwse-resize; } .h[data-h=s] { left: 50%; top: 100%; cursor: ns-resize; }
+  .h[data-h=sw] { left: 0; top: 100%; cursor: nesw-resize; } .h[data-h=w] { left: 0; top: 50%; cursor: ew-resize; }
+  .h[data-h=rot] { left: 50%; top: -26px; border-radius: 50%; cursor: grab; }
+  .rotline { position: absolute; left: 50%; top: -20px; height: 20px; border-left: 1.5px solid var(--accent); }
+  .msg { color: var(--muted); text-align: center; max-width: 360px; line-height: 1.5; }
+
+  /* ---------- right panel */
+  #panelBody { flex: 1; padding: 0 0 24px; }
+  .sec { border-top: 1px solid var(--line); padding: 12px 14px; }
+  .sec:first-child { border-top: 0; }
+  .sec h3 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .sec h3 .sp { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .layers { display: flex; flex-direction: column; gap: 1px; }
+  .lr { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 6px; cursor: default; min-width: 0; border: 1px solid transparent; }
+  .lr:hover { background: var(--hover); }
+  .lr.on { background: var(--selbg); }
+  .lr.hidden .ln { opacity: .45; }
+  .lr.dropb { border-bottom-color: var(--accent); }
+  .lr.dropt { border-top-color: var(--accent); }
+  .grip { width: 14px; color: var(--muted); cursor: grab; text-align: center; font-size: 11px; letter-spacing: -2px; flex: none; }
+  .ib { width: 24px; height: 22px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); flex: none; }
+  .ib:hover { background: var(--hover); color: var(--text); }
+  .ib.act { color: var(--text); }
+  .ib svg { width: 14px; height: 14px; }
+  .kind { width: 18px; text-align: center; color: var(--muted); font-size: 11px; flex: none; }
+  .ln { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+  .grid.g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .f { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .f > span { color: var(--muted); font-size: 11px; }
+  .f.full { grid-column: 1 / -1; }
+  .in { height: 26px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel2); padding: 0 7px; width: 100%; min-width: 0; }
+  textarea.in { height: auto; min-height: 54px; padding: 6px 7px; resize: vertical; line-height: 1.35; }
+  select.in { -webkit-appearance: none; appearance: none; padding-right: 22px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 12px) 11px, calc(100% - 8px) 11px; background-size: 4px 4px; background-repeat: no-repeat; }
+  .in:focus { outline: none; border-color: var(--accent); }
+  .colr { display: flex; gap: 6px; align-items: center; }
+  .colr input[type=color] { width: 30px; height: 26px; border: 1px solid var(--line); border-radius: 5px; padding: 1px; background: var(--panel2); flex: none; }
+  .rng { display: flex; align-items: center; gap: 8px; }
+  .rng input { flex: 1; min-width: 0; }
+  .rng output { width: 38px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .note { color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .note code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; word-break: break-all; }
+  .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+  /* ---------- dialogs */
+  #variantDlg { position: absolute; top: 52px; right: 14px; z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; box-shadow: var(--shadow); width: 280px; display: flex; flex-direction: column; gap: 8px; }
+  #variantDlg[hidden], #swap[hidden], #boot[hidden] { display: none; }
+  #variantDlg .acts { margin: 0; justify-content: flex-end; }
+  #swap { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 28px; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); width: min(980px, 100%); height: min(720px, 100%); display: flex; flex-direction: column; min-height: 0; }
+  .modal header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .modal header .tt { font-weight: 650; margin-right: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .modal .pathrow { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .modal .pathrow .in { flex: 1; }
+  .photos { flex: 1; min-height: 0; padding: 12px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; align-content: start; }
+  .ph { display: flex; flex-direction: column; gap: 4px; text-align: left; border-radius: 8px; padding: 4px; }
+  .ph:hover { background: var(--hover); }
+  .ph .im { aspect-ratio: 1 / 1; border-radius: 6px; overflow: hidden; background: var(--panel2); }
+  .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .ph .m { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .modal footer { padding: 10px 14px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+  .modal footer .sp { margin-left: auto; }
+
+  #boot { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+  .bootcard { width: 340px; display: flex; flex-direction: column; gap: 10px; }
+  .bootcard h1 { font-size: 16px; margin: 0; }
+  .bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s ease; }
+  .bootcard .note.err { color: var(--danger); white-space: pre-wrap; }
+
+  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 60; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; box-shadow: var(--shadow); display: flex; gap: 10px; align-items: center; max-width: min(560px, 90vw); }
+  #toast[hidden] { display: none; }
+  #toast.err { border-color: var(--danger); }
+  #toast a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: sp .8s linear infinite; flex: none; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* ---------- preview placeholder */
+  .pv { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+  .pv .card { width: 46vmin; aspect-ratio: 4 / 5; background: #e9e4da; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+  .pv .card::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56%; background: #d7262b; }
+  .pv .card b { position: absolute; left: 3%; right: 3%; top: 17%; font: 900 15vmin/1 Impact, "Arial Narrow", sans-serif; color: #d7262b; text-align: center; z-index: 1; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+<div id="app" hidden>
+  <aside id="side">
+    <div class="head">Pin Remake <span class="sub" id="pinCount"></span></div>
+    <div id="designs" class="scroll"></div>
+  </aside>
+  <main id="center">
+    <div id="bar">
+      <div class="title"><span id="dname"></span><span id="dstate"></span></div>
+      <div class="tools">
+        <button class="btn primary" id="bSave">Save</button>
+        <button class="btn" id="bDiscard">Discard changes</button>
+        <button class="btn" id="bVariant">Save as variant</button>
+        <button class="btn" id="bDup">Duplicate</button>
+        <button class="btn" id="bRevert">Revert to original layout</button>
+        <button class="btn" id="bExport">Export PNG</button>
+      </div>
+      <div class="cmp">
+        <div class="seg" id="cmpSeg"><button data-v="off">Edit</button><button data-v="overlay">Overlay</button><button data-v="side">Side by side</button></div>
+        <label id="coWrap">Original <input type="range" id="co" min="0" max="100" step="1" /></label>
+      </div>
+    </div>
+    <div id="variantDlg" hidden>
+      <b>Save as variant</b>
+      <input class="in" id="vname" placeholder="Variant name" />
+      <div class="acts"><button class="btn ghost" id="vCancel">Cancel</button><button class="btn primary" id="vCreate">Create</button></div>
+    </div>
+    <div id="stage"></div>
+  </main>
+  <aside id="panel"><div id="panelBody" class="scroll"></div></aside>
+</div>
+
+<div id="swap" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <header>
+      <span class="tt" id="swapTitle">Swap image</span>
+      <input type="file" id="filePick" accept="image/*,.heic,.heif" hidden />
+      <button class="btn" id="swapPick">Pick a file…</button>
+      <button class="btn" id="swapBali">Bali folder</button>
+      <button class="btn ghost" id="swapClose">Close</button>
+    </header>
+    <div class="pathrow"><input class="in" id="swapDir" placeholder="Folder path" /><button class="btn" id="swapLoad">Open folder</button></div>
+    <div class="photos scroll" id="swapGrid"></div>
+    <footer><span id="swapInfo"></span><span class="sp"></span><button class="btn small" id="swapMore" hidden>Load more</button></footer>
+  </div>
+</div>
+
+<div id="boot" hidden>
+  <div class="bootcard">
+    <h1>Pin Remake</h1>
+    <div class="note" id="bootMsg">Preparing…</div>
+    <div class="bar"><i id="bootBar"></i></div>
+    <div class="note">First run copies the pins, cuts their layers and looks through the Bali photos. Later opens are instant.</div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+"use strict";
+/* ============================================================ preview gate */
+function isPreview() {
+  if (new URLSearchParams(location.search).get("_preview") === "1") return true;
+  try {
+    let w = window;
+    while (w.parent && w.parent !== w) {
+      w = w.parent;
+      if (new URLSearchParams(w.location.search).get("_preview") === "1") return true;
+    }
+  } catch (e) { /* cross-origin ancestor: the climb ends here */ }
+  return false;
+}
+
+/* ============================================================ helpers */
+const P = fused.params;
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) ? n : (d || 0); };
+const r3 = v => Math.round(v * 1000) / 1000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function gp(k, def) { const v = P.get(k); return v == null || v === "" ? def : v; }
+function setp(k, v) { if ((P.get(k) || "") !== String(v)) P.set(k, String(v)); }
+function py(file, params, opts) {
+  const p = {};
+  for (const k in params) p[k] = typeof params[k] === "string" ? params[k] : (typeof params[k] === "object" ? JSON.stringify(params[k]) : String(params[k]));
+  return fused.runPython(file, p, Object.assign({ key: null }, opts || {}));
+}
+
+let LIST = null, FONTS = {}, DOC = null, DOC_SLUG = "", DIRTY = false, BUILT = "";
+let openTok = 0, writeQ = Promise.resolve(), draftTimer = 0, panelSig = "", sideSig = "", thumbVer = 0;
+let uid = 0, failedSlug = "";
+
+function url(p) {
+  if (!p) return "";
+  const u = fused.rawUrl(p);
+  return BUILT ? u + (u.indexOf("?") >= 0 ? "&" : "?") + "b=" + BUILT : u;
+}
+function queue(fn) { const run = writeQ.then(fn, fn); writeQ = run.catch(() => {}); return run; }
+
+let toastTimer = 0;
+function toast(html, opts) {
+  const t = $("#toast");
+  t.innerHTML = html;
+  t.className = opts && opts.err ? "err" : "";
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  if (!(opts && opts.sticky)) toastTimer = setTimeout(() => { t.hidden = true; }, (opts && opts.ms) || 3200);
+}
+function errMsg(e) { return esc((e && (e.message || e.type)) || String(e)); }
+
+/* ============================================================ fonts + text measurement */
+function installFonts(list) {
+  const css = list.map(f => `@font-face{font-family:"pr-${f.id}";src:${f.local.map(n => `local("${n}")`).join(",")};}`).join("\n");
+  const st = document.createElement("style");
+  st.textContent = css;
+  document.head.appendChild(st);
+  FONTS = {};
+  for (const f of list) FONTS[f.id] = f;
+}
+function fam(id) { const f = FONTS[id] || FONTS["hn-medium"]; return f ? `"pr-${f.id}", ${f.fallback}` : "sans-serif"; }
+async function loadFonts() {
+  await Promise.all(Object.keys(FONTS).map(id => document.fonts.load(`40px "pr-${id}"`).catch(() => null)));
+}
+const mctx = document.createElement("canvas").getContext("2d");
+const inkCache = new Map();
+function inkBox(lines, fid, ref, lh, tr) {
+  const k = [fid, lines.join("\n"), lh, tr].join("|");
+  if (inkCache.has(k)) return inkCache.get(k);
+  mctx.font = `${ref}px ${fam(fid)}`;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  lines.forEach((ln, i) => {
+    if (!ln.trim()) return;
+    const m = mctx.measureText(ln);
+    const base = (i * lh + lh / 2 + 0.35) * ref;
+    x0 = Math.min(x0, -m.actualBoundingBoxLeft);
+    x1 = Math.max(x1, m.actualBoundingBoxRight + tr * ref * (ln.length - 1));
+    y0 = Math.min(y0, base - m.actualBoundingBoxAscent);
+    y1 = Math.max(y1, base + m.actualBoundingBoxDescent);
+  });
+  const box = x1 > x0 && y1 > y0 ? { x0, y0, x1, y1 } : { x0: 0, y0: 0, x1: ref, y1: ref };
+  inkCache.set(k, box);
+  return box;
+}
+
+/* ============================================================ layer rendering (mirrors pinlib/render.py) */
+function sortedLayers(d) {
+  return d.layers.map((L, i) => [L, i]).sort((a, b) => (num(a[0].z, a[1]) - num(b[0].z, b[1])) || (a[1] - b[1])).map(a => a[0]);
+}
+function cssFilter(L) {
+  const f = [];
+  if (L.filter === "bw" || L.filter === "sketch") f.push("grayscale(1)");
+  const c = num(L.contrast, 1), b = num(L.brightness, 1);
+  if (c !== 1) f.push(`contrast(${c})`);
+  if (b !== 1) f.push(`brightness(${b})`);
+  return f.join(" ");
+}
+function textSVG(L, W, H) {
+  const lines = String(L.text || "").split("\n");
+  const lh = num(L.line_height, 1) || 1, tr = num(L.tracking, 0) / 1000;
+  const inline = L.effect === "inline";
+  const ff = esc(fam(L.font));
+  let vb, size, anchor = "start", x = 0, par = "none";
+  if (L.fit === "stretch") {
+    size = 200;
+    const m = inkBox(lines, L.font, size, lh, tr);
+    vb = `${m.x0} ${m.y0} ${m.x1 - m.x0} ${m.y1 - m.y0}`;
+  } else {
+    size = num(L.size, 4);
+    const bw = num(L.w) * W / H, bh = num(L.h);
+    vb = `0 0 ${bw} ${bh}`;
+    par = "xMinYMin meet";
+    if (L.align === "center") { anchor = "middle"; x = bw / 2; }
+    else if (L.align === "right") { anchor = "end"; x = bw; }
+  }
+  const tsp = lines.map((ln, i) => `<tspan x="${x}" y="${(i * lh + lh / 2 + 0.35) * size}">${esc(ln) || " "}</tspan>`).join("");
+  const common = `font-family="${ff}" font-size="${size}" letter-spacing="${tr * size}" text-anchor="${anchor}" style="white-space:pre"`;
+  let body;
+  if (inline) {
+    body = `<text ${common} fill="${esc(L.color)}" stroke="${esc(L.color)}" stroke-width="${0.08 * size}" stroke-linejoin="round">${tsp}</text>` +
+           `<text ${common} fill="none" stroke="${esc(L.effect_color || "#ffffff")}" stroke-width="${0.025 * size}">${tsp}</text>`;
+  } else {
+    body = `<text ${common} fill="${esc(L.color)}">${tsp}</text>`;
+  }
+  return `<svg viewBox="${vb}" preserveAspectRatio="${par}">${body}</svg>`;
+}
+function grainSVG() {
+  const id = "gr" + (++uid);
+  return `<svg width="100%" height="100%"><filter id="${id}" x="0" y="0" width="100%" height="100%">` +
+    `<feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>` +
+    `<feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2 0 0 0 -0.6"/></filter>` +
+    `<rect width="100%" height="100%" filter="url(#${id})"/></svg>`;
+}
+function layerBox(el, L, order) {
+  const s = el.style;
+  s.left = num(L.x) + "%"; s.top = num(L.y) + "%"; s.width = num(L.w) + "%"; s.height = num(L.h) + "%";
+  s.transform = num(L.rotation) ? `rotate(${num(L.rotation)}deg)` : "";
+  s.opacity = L.opacity == null ? 1 : num(L.opacity, 1);
+  s.mixBlendMode = L.blend && L.blend !== "normal" ? L.blend : "";
+  s.zIndex = order;
+  s.display = L.visible === false ? "none" : "";
+}
+function layerContent(el, L, W, H) {
+  el.className = "L k-" + L.kind;
+  if (L.kind === "image") {
+    let img = el.firstElementChild;
+    if (!img || img.tagName !== "IMG") { el.innerHTML = ""; img = document.createElement("img"); img.alt = ""; img.draggable = false; el.appendChild(img); }
+    const u = url(L.src);
+    if (img.getAttribute("src") !== u) img.setAttribute("src", u);
+    const c = L.crop || {}, cx = num(c.x, 50), cy = num(c.y, 50), sc = num(c.scale, 1) || 1;
+    img.style.objectFit = L.fit === "cover" || L.fit === "contain" ? L.fit : "fill";
+    img.style.objectPosition = `${cx}% ${cy}%`;
+    img.style.transformOrigin = `${cx}% ${cy}%`;
+    img.style.transform = sc !== 1 ? `scale(${sc})` : "";
+    img.style.filter = cssFilter(L);
+    const m = L.mask ? `url("${url(L.mask)}")` : "";
+    el.style.webkitMaskImage = m; el.style.maskImage = m;
+    el.style.background = "";
+    return;
+  }
+  el.style.webkitMaskImage = ""; el.style.maskImage = "";
+  let sig, html = null;
+  if (L.kind === "rect") { el.innerHTML = ""; el.style.background = L.color || "#000"; el._sig = ""; return; }
+  el.style.background = "";
+  if (L.kind === "text") {
+    sig = JSON.stringify([L.text, L.font, L.size, L.tracking, L.line_height, L.align, L.fit, L.effect, L.effect_color, L.color, L.fit === "stretch" ? 0 : [L.w, L.h, W, H]]);
+    if (el._sig !== sig) html = textSVG(L, W, H);
+  } else if (L.kind === "polygon") {
+    sig = JSON.stringify([L.points, L.color]);
+    if (el._sig !== sig) html = `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${(L.points || []).map(p => p[0] + "," + p[1]).join(" ")}" fill="${esc(L.color)}"/></svg>`;
+  } else if (L.kind === "svg") {
+    sig = JSON.stringify([L.preset, L.svg, L.viewbox, L.color]);
+    if (el._sig !== sig) html = L.preset === "grain" ? grainSVG() : `<svg viewBox="${esc(L.viewbox || "0 0 100 100")}" preserveAspectRatio="none">${L.svg || ""}</svg>`;
+    el.style.color = L.color || "#000";
+  }
+  if (html !== null) { el.innerHTML = html; el._sig = sig; }
+}
+/** Paint a design into `poster` (an absolutely-filled div); keeps one element per layer id. */
+function paintPoster(poster, d) {
+  const W = num(d.canvas.width, 1000), H = num(d.canvas.height, 1250);
+  poster.style.background = d.canvas.background || "#fff";
+  const map = poster._els || (poster._els = new Map());
+  const seen = new Set();
+  sortedLayers(d).forEach((L, i) => {
+    let el = map.get(L.id);
+    if (!el) { el = document.createElement("div"); el.dataset.id = L.id; map.set(L.id, el); poster.appendChild(el); }
+    layerBox(el, L, i + 1);
+    layerContent(el, L, W, H);
+    seen.add(L.id);
+  });
+  for (const [id, el] of map) if (!seen.has(id)) { el.remove(); map.delete(id); }
+}
+
+/* ============================================================ boot */
+function showBoot(msg, prog, err) {
+  $("#boot").hidden = false;
+  const m = $("#bootMsg");
+  m.textContent = msg;
+  m.className = "note" + (err ? " err" : "");
+  $("#bootBar").style.width = Math.round(clamp(prog || 0, 0, 1) * 100) + "%";
+}
+async function runSetup(force) {
+  let first = true;
+  const slow = setTimeout(() => showBoot("Preparing…", 0.02), force ? 0 : 400);
+  try {
+    for (let i = 0; i < 400; i++) {
+      const r = await py("setup.py", force && first ? { force: "true" } : {}, { key: "setup" });
+      first = false;
+      if (r.status === "done") return r;
+      if (r.status === "error") throw new Error(r.message);
+      clearTimeout(slow);
+      showBoot(r.message || "Working…", r.progress);
+    }
+    throw new Error("Setup did not finish.");
+  } finally { clearTimeout(slow); }
+}
+async function loadList() {
+  LIST = await py("designs.py", { action: "list" });
+  BUILT = String(LIST.built || "");
+  sideSig = "";
+}
+
+async function boot() {
+  if (isPreview()) {
+    document.body.innerHTML = '<div class="pv"><div class="card"><b>TOKYO</b></div></div>';
+    return;
+  }
+  try {
+    const st = await runSetup(false);
+    await loadList();
+    installFonts(LIST.fonts || []);
+    await loadFonts();
+    const errs = Object.entries(st.steps || {}).filter(([, v]) => v && v.error);
+    if (errs.length) toast("Setup: " + errs.map(([k, v]) => esc(k + " — " + v.error)).join("; "), { err: true, ms: 9000 });
+  } catch (e) {
+    showBoot("Setup failed: " + ((e && e.message) || e) + (e && e.traceback ? "\n\n" + e.traceback.split("\n").slice(-4).join("\n") : ""), 1, true);
+    return;
+  }
+  $("#boot").hidden = true;
+  $("#app").hidden = false;
+  wireStatic();
+  P.onChange(onParams);
+  new ResizeObserver(() => renderStage()).observe($("#stage"));
+  onParams();
+}
+
+/* ============================================================ params → view */
+async function onParams() {
+  let d = gp("d", "");
+  if (!d) {
+    const first = LIST.designs.find(x => !x.variant_of) || LIST.designs[0];
+    if (first) { setp("d", first.slug); return; }
+  }
+  if (d && !d.startsWith("pin:") && d !== DOC_SLUG && d !== failedSlug) {
+    const ok = await openDesign(d);
+    if (!ok) return;
+  } else if (!d || d.startsWith("pin:")) {
+    if (DOC_SLUG) await flushDraft();
+    DOC = null; DOC_SLUG = ""; DIRTY = false;
+  }
+  renderAll();
+}
+async function openDesign(slug) {
+  const tok = ++openTok;
+  await flushDraft();
+  try {
+    const r = await py("designs.py", { action: "get", slug }, { key: "get" });
+    if (tok !== openTok) return false;
+    DOC = r.design; DOC_SLUG = slug; DIRTY = !!r.has_draft; failedSlug = "";
+    panelSig = "";
+    return true;
+  } catch (e) {
+    if (tok !== openTok) return false;
+    DOC = null; DOC_SLUG = ""; failedSlug = slug;
+    toast("Could not open " + esc(slug) + ": " + errMsg(e), { err: true });
+    return true;
+  }
+}
+function renderAll() {
+  renderSidebar();
+  renderBar();
+  renderStage();
+  renderPanel();
+  renderSwap();
+  renderVariantDlg();
+}
+
+/* ============================================================ sidebar */
+function pinTitle(n) { const p = (LIST.pins || []).find(x => x.n === n); return p ? p.title : "Pin " + n; }
+function designThumb(d) {
+  const W = num(d.canvas.width, 1000), H = num(d.canvas.height, 1250);
+  const box = document.createElement("div");
+  box.className = "thumb";
+  box.style.height = Math.round(38 * H / W) + "px";
+  box.style.position = "relative";
+  const poster = document.createElement("div");
+  poster.className = "poster";
+  box.appendChild(poster);
+  paintPoster(poster, d);
+  return box;
+}
+function renderSidebar() {
+  const cur = gp("d", "");
+  const sig = JSON.stringify([BUILT, LIST.designs.length, LIST.designs.map(x => x.slug + (x.has_draft ? "*" : "")).join(","), cur, thumbVer]);
+  if (sig === sideSig) return;
+  sideSig = sig;
+  const host = $("#designs");
+  const top = host.scrollTop;
+  host.innerHTML = "";
+  const pins = (LIST.pins || []).slice().sort((a, b) => a.n.localeCompare(b.n));
+  $("#pinCount").textContent = pins.length ? pins.length + " pins" : "";
+  const byPin = {};
+  for (const e of LIST.designs) (byPin[e.design.pin || "?"] = byPin[e.design.pin || "?"] || []).push(e);
+  const groups = pins.map(p => ({ n: p.n, title: p.title, pin: p }));
+  for (const k of Object.keys(byPin)) if (!pins.some(p => p.n === k)) groups.push({ n: k, title: "Other", pin: null });
+  for (const g of groups) {
+    const el = document.createElement("div");
+    el.className = "grp";
+    el.innerHTML = `<div class="grp-h"><b>${esc(g.n)}</b> ${esc(g.title)}</div>`;
+    if (g.pin) {
+      const b = document.createElement("button");
+      b.className = "row" + (cur === "pin:" + g.n ? " on" : "");
+      const ar = g.pin.h && g.pin.w ? g.pin.h / g.pin.w : 1.25;
+      b.innerHTML = `<div class="thumb" style="height:${Math.round(38 * ar)}px"><img alt="" src="${esc(url(g.pin.file))}"></div><div class="t"><div class="n">Original pin</div><div class="m">${esc(g.pin.name)}</div></div>`;
+      b.onclick = () => { setp("sel", ""); setp("d", "pin:" + g.n); };
+      el.appendChild(b);
+    }
+    const list = byPin[g.n] || [];
+    const roots = list.filter(e => !e.variant_of || !list.some(o => o.slug === e.variant_of));
+    const emit = (e, depth) => {
+      const b = document.createElement("button");
+      b.className = "row" + (depth ? " indent" : "") + (cur === e.slug ? " on" : "");
+      const isCur = e.slug === DOC_SLUG && DOC;
+      const d = isCur ? DOC : e.design;
+      b.appendChild(designThumb(d));
+      const t = document.createElement("div");
+      t.className = "t";
+      const kind = depth ? "Variant" : "Recreation";
+      t.innerHTML = `<div class="n">${esc(e.name)}</div><div class="m">${kind}${(isCur ? DIRTY : e.has_draft) ? " · unsaved" : ""}</div>`;
+      b.appendChild(t);
+      b.onclick = () => { if (gp("d", "") !== e.slug) { P.set("sel", ""); setp("d", e.slug); } };
+      el.appendChild(b);
+      list.filter(o => o.variant_of === e.slug && o !== e).forEach(o => emit(o, depth + 1));
+    };
+    roots.forEach(e => emit(e, 0));
+    if (!list.length) el.insertAdjacentHTML("beforeend", `<div class="empty">Not recreated yet</div>`);
+    host.appendChild(el);
+  }
+  host.scrollTop = top;
+}
+
+/* ============================================================ toolbar */
+function renderBar() {
+  const d = gp("d", "");
+  const isPin = d.startsWith("pin:");
+  $("#dname").textContent = DOC ? DOC.name : isPin ? `Pin ${d.slice(4)} · ${pinTitle(d.slice(4))} — original` : "";
+  const st = $("#dstate");
+  st.textContent = DOC ? (DIRTY ? "● Unsaved changes" : "Saved") : "";
+  st.className = DIRTY ? "dirty" : "";
+  for (const id of ["bSave", "bVariant", "bDup", "bRevert", "bExport"]) $("#" + id).disabled = !DOC;
+  $("#bSave").disabled = !DOC || !DIRTY;
+  $("#bDiscard").hidden = !DOC || !DIRTY;
+  const cmp = gp("cmp", "off");
+  for (const b of $("#cmpSeg").children) { b.classList.toggle("on", b.dataset.v === cmp); b.disabled = !DOC; }
+  $("#coWrap").style.visibility = DOC && cmp === "overlay" ? "visible" : "hidden";
+  const co = $("#co");
+  if (document.activeElement !== co) co.value = gp("co", "50");
+}
+
+/* ============================================================ stage */
+const MAIN = (() => {
+  const frame = document.createElement("div");
+  frame.className = "frame";
+  frame.innerHTML = '<div class="poster"></div><img class="ghostimg" alt="" hidden><div class="selwrap"><div class="selbox" hidden>' +
+    '<div class="rotline"></div>' + ["nw", "n", "ne", "e", "se", "s", "sw", "w", "rot"].map(h => `<div class="h" data-h="${h}"></div>`).join("") + "</div></div>";
+  return { frame, poster: frame.querySelector(".poster"), ghost: frame.querySelector(".ghostimg"), sel: frame.querySelector(".selbox") };
+})();
+const ORIG = (() => { const o = document.createElement("div"); o.className = "orig"; o.innerHTML = '<span class="cap">Original</span><img alt="">'; return o; })();
+
+function fitSize(aw, ah, W, H) { const k = Math.min(aw / W, ah / H); return [Math.max(40, Math.floor(W * k)), Math.max(40, Math.floor(H * k))]; }
+function renderStage() {
+  if (!LIST) return;
+  const stage = $("#stage");
+  const d = gp("d", "");
+  const sw = stage.clientWidth - 40, sh = stage.clientHeight - 40;
+  if (d.startsWith("pin:")) {
+    const p = (LIST.pins || []).find(x => x.n === d.slice(4));
+    if (!p) { stage.innerHTML = '<div class="msg">This pin is not in the sources folder.</div>'; return; }
+    const [w, h] = fitSize(sw, sh, p.w || 800, p.h || 1000);
+    if (MAIN.frame.parentNode) MAIN.frame.remove();
+    if (ORIG.parentNode !== stage || stage.children.length !== 1) { stage.innerHTML = ""; stage.appendChild(ORIG); }
+    ORIG.style.width = w + "px"; ORIG.style.height = h + "px";
+    ORIG.querySelector(".cap").hidden = true;
+    const img = ORIG.querySelector("img");
+    if (img.getAttribute("src") !== url(p.file)) img.setAttribute("src", url(p.file));
+    return;
+  }
+  if (!DOC) { stage.innerHTML = '<div class="msg">Pick a design on the left.</div>'; return; }
+  const W = num(DOC.canvas.width, 1000), H = num(DOC.canvas.height, 1250);
+  const cmp = gp("cmp", "off");
+  const side = cmp === "side";
+  const [w, h] = side ? fitSize((sw - 24) / 2, sh - 20, W, H) : fitSize(sw, sh, W, H);
+  const want = side ? [ORIG, MAIN.frame] : [MAIN.frame];
+  if (stage.children.length !== want.length || want.some((n, i) => stage.children[i] !== n)) {
+    stage.innerHTML = "";
+    want.forEach(n => stage.appendChild(n));
+  }
+  MAIN.frame.style.width = w + "px"; MAIN.frame.style.height = h + "px";
+  if (side) {
+    ORIG.style.width = w + "px"; ORIG.style.height = h + "px";
+    ORIG.querySelector(".cap").hidden = false;
+    const img = ORIG.querySelector("img");
+    if (img.getAttribute("src") !== url(DOC.source)) img.setAttribute("src", url(DOC.source));
+  }
+  if (MAIN.poster._slug !== DOC_SLUG) { MAIN.poster.innerHTML = ""; MAIN.poster._els = null; MAIN.poster._slug = DOC_SLUG; }
+  paintPoster(MAIN.poster, DOC);
+  const g = MAIN.ghost;
+  g.hidden = cmp !== "overlay";
+  if (!g.hidden) {
+    if (g.getAttribute("src") !== url(DOC.source)) g.setAttribute("src", url(DOC.source));
+    g.style.opacity = clamp(num(gp("co", "50"), 50), 0, 100) / 100;
+  }
+  paintSelection();
+}
+function selLayer() { const id = gp("sel", ""); return DOC && id ? DOC.layers.find(L => L.id === id) : null; }
+function paintSelection() {
+  const L = selLayer(), sb = MAIN.sel;
+  if (!L || L.visible === false) { sb.hidden = true; return; }
+  sb.hidden = false;
+  sb.style.left = num(L.x) + "%"; sb.style.top = num(L.y) + "%"; sb.style.width = num(L.w) + "%"; sb.style.height = num(L.h) + "%";
+  sb.style.transform = num(L.rotation) ? `rotate(${num(L.rotation)}deg)` : "";
+  sb.classList.toggle("locked", !!L.locked);
+}
+
+/* ---------- hit testing */
+const alphaCache = new Map();
+function alphaAt(L, u, v) {
+  const p = L.mask || L.src;
+  if (!p || (!L.mask && L.fit && L.fit !== "fill")) return 1;
+  const key = url(p);
+  const e = alphaCache.get(key);
+  if (e === undefined) {
+    alphaCache.set(key, "loading");
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const s = Math.min(1, 256 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(im.naturalWidth * s)); c.height = Math.max(1, Math.round(im.naturalHeight * s));
+        const cx = c.getContext("2d");
+        cx.drawImage(im, 0, 0, c.width, c.height);
+        alphaCache.set(key, { w: c.width, h: c.height, data: cx.getImageData(0, 0, c.width, c.height).data });
+      } catch (err) { alphaCache.set(key, null); }
+    };
+    im.onerror = () => alphaCache.set(key, null);
+    im.src = key;
+    return 1;
+  }
+  if (!e || e === "loading") return 1;
+  let best = 0;
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const x = clamp(Math.floor(u * e.w) + dx, 0, e.w - 1), y = clamp(Math.floor(v * e.h) + dy, 0, e.h - 1);
+    best = Math.max(best, e.data[(y * e.w + x) * 4 + 3] / 255);
+  }
+  return best;
+}
+function pip(pts, x, y) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function localUV(L, nx, ny, W, H) {
+  const bw = num(L.w) / 100 * W, bh = num(L.h) / 100 * H;
+  const cx = num(L.x) / 100 * W + bw / 2, cy = num(L.y) / 100 * H + bh / 2;
+  const t = -num(L.rotation) * Math.PI / 180;
+  const dx = nx - cx, dy = ny - cy;
+  const rx = dx * Math.cos(t) - dy * Math.sin(t), ry = dx * Math.sin(t) + dy * Math.cos(t);
+  return [(rx + bw / 2) / bw, (ry + bh / 2) / bh];
+}
+function hitTest(nx, ny) {
+  const W = num(DOC.canvas.width), H = num(DOC.canvas.height);
+  const order = sortedLayers(DOC).reverse();
+  for (const L of order) {
+    if (L.visible === false || L.locked) continue;
+    const [u, v] = localUV(L, nx, ny, W, H);
+    if (u < 0 || u > 1 || v < 0 || v > 1) continue;
+    if (L.kind === "polygon" && !pip(L.points || [], u * 100, v * 100)) continue;
+    if (L.kind === "image" && alphaAt(L, u, v) < 0.12) continue;
+    return L;
+  }
+  return null;
+}
+
+/* ---------- drag / resize / rotate */
+const HANDLES = { nw: [-1, -1], n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0] };
+let drag = null;
+function toNative(ev) {
+  const r = MAIN.poster.getBoundingClientRect();
+  return [(ev.clientX - r.left) / r.width * num(DOC.canvas.width), (ev.clientY - r.top) / r.height * num(DOC.canvas.height)];
+}
+function onDown(ev) {
+  if (!DOC || ev.button !== 0) return;
+  const [nx, ny] = toNative(ev);
+  const h = ev.target.closest && ev.target.closest(".h");
+  let L, mode;
+  if (h) { L = selLayer(); mode = h.dataset.h === "rot" ? "rot" : "size"; }
+  else {
+    L = hitTest(nx, ny);
+    if (!L) { if (gp("sel", "")) P.set("sel", ""); return; }
+    mode = "move";
+    if (gp("sel", "") !== L.id) P.set("sel", L.id);
+  }
+  if (!L || L.locked) return;
+  ev.preventDefault();
+  MAIN.frame.setPointerCapture(ev.pointerId);
+  drag = { id: L.id, mode, h: h ? h.dataset.h : "", x0: nx, y0: ny, L0: JSON.parse(JSON.stringify(L)), moved: false };
+}
+function onMove(ev) {
+  if (!drag || !DOC) return;
+  const L = DOC.layers.find(x => x.id === drag.id);
+  if (!L) return;
+  const W = num(DOC.canvas.width), H = num(DOC.canvas.height);
+  const [nx, ny] = toNative(ev);
+  const L0 = drag.L0, dx = nx - drag.x0, dy = ny - drag.y0;
+  if (!drag.moved && Math.hypot(dx, dy) < 2) return;
+  drag.moved = true;
+  if (drag.mode === "move") {
+    L.x = r3(num(L0.x) + dx / W * 100);
+    L.y = r3(num(L0.y) + dy / H * 100);
+  } else if (drag.mode === "rot") {
+    const bw = num(L0.w) / 100 * W, bh = num(L0.h) / 100 * H;
+    const cx = num(L0.x) / 100 * W + bw / 2, cy = num(L0.y) / 100 * H + bh / 2;
+    let a = num(L0.rotation) + (Math.atan2(ny - cy, nx - cx) - Math.atan2(drag.y0 - cy, drag.x0 - cx)) * 180 / Math.PI;
+    if (ev.shiftKey) a = Math.round(a / 15) * 15;
+    a = ((a + 180) % 360 + 360) % 360 - 180;
+    L.rotation = r3(a);
+  } else {
+    const [hx, hy] = HANDLES[drag.h];
+    const th = num(L0.rotation) * Math.PI / 180, cos = Math.cos(th), sin = Math.sin(th);
+    const w0 = num(L0.w) / 100 * W, h0 = num(L0.h) / 100 * H;
+    const c0x = num(L0.x) / 100 * W + w0 / 2, c0y = num(L0.y) / 100 * H + h0 / 2;
+    const dxl = dx * cos + dy * sin, dyl = -dx * sin + dy * cos;
+    let w = w0 + hx * dxl, h = h0 + hy * dyl;
+    if (hx && hy && !ev.shiftKey) { const s = Math.max(w / w0, h / h0); w = w0 * s; h = h0 * s; }
+    w = Math.max(w, 4); h = Math.max(h, 4);
+    const ax = -hx * w0 / 2, ay = -hy * h0 / 2;
+    const awx = c0x + ax * cos - ay * sin, awy = c0y + ax * sin + ay * cos;
+    const ox = hx * w / 2, oy = hy * h / 2;
+    const cx = awx + ox * cos - oy * sin, cy = awy + ox * sin + oy * cos;
+    L.x = r3((cx - w / 2) / W * 100); L.y = r3((cy - h / 2) / H * 100);
+    L.w = r3(w / W * 100); L.h = r3(h / H * 100);
+    if (L.kind === "text" && L.fit !== "stretch" && hx && hy) L.size = r3(num(L0.size, 4) * h / h0);
+  }
+  paintPoster(MAIN.poster, DOC);
+  paintSelection();
+}
+function onUp(ev) {
+  if (!drag) return;
+  try { MAIN.frame.releasePointerCapture(ev.pointerId); } catch (e) { /* already released */ }
+  const moved = drag.moved;
+  drag = null;
+  if (moved) { markDirty(); panelSig = ""; renderPanel(); }
+}
+
+/* ============================================================ edits, drafts, saving */
+function markDirty() {
+  DIRTY = true;
+  renderBar();
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(saveDraft, 500);
+}
+function saveDraft() {
+  draftTimer = 0;
+  if (!DOC) return Promise.resolve();
+  const slug = DOC_SLUG, body = JSON.stringify(DOC);
+  const snap = JSON.parse(body);
+  return queue(() => py("designs.py", { action: "draft", slug, design: body })).then(() => {
+    const e = LIST.designs.find(x => x.slug === slug);
+    if (e) { e.design = snap; e.has_draft = true; }
+    thumbVer++;
+    renderSidebar();
+  }).catch(e => toast("Draft not saved: " + errMsg(e), { err: true }));
+}
+function flushDraft() {
+  if (draftTimer) { clearTimeout(draftTimer); return saveDraft(); }
+  return writeQ;
+}
+function edit(fn, opts) {
+  if (!DOC) return;
+  const L = selLayer();
+  fn(L);
+  paintPoster(MAIN.poster, DOC);
+  paintSelection();
+  markDirty();
+  if (opts && opts.panel) { panelSig = ""; renderPanel(); }
+}
+async function doSave() {
+  if (!DOC) return;
+  clearTimeout(draftTimer); draftTimer = 0;
+  const slug = DOC_SLUG, body = JSON.stringify(DOC);
+  try {
+    const r = await queue(() => py("designs.py", { action: "save", slug, design: body }));
+    if (DOC_SLUG === slug && JSON.stringify(DOC) === body) { DOC.updated = r.design.updated; DIRTY = false; }
+    await loadList();
+    toast("Saved " + esc(r.design.name));
+    renderAll();
+  } catch (e) { toast("Save failed: " + errMsg(e), { err: true }); }
+}
+async function doDiscard() {
+  if (!DOC) return;
+  clearTimeout(draftTimer); draftTimer = 0;
+  try {
+    const r = await queue(() => py("designs.py", { action: "discard", slug: DOC_SLUG }));
+    DOC = r.design; DIRTY = false; panelSig = "";
+    await loadList();
+    renderAll();
+  } catch (e) { toast("Discard failed: " + errMsg(e), { err: true }); }
+}
+async function doRevert() {
+  if (!DOC || !confirm("Reset every layer of “" + DOC.name + "” to the shipped layout? Unsaved edits are replaced (Save keeps the result).")) return;
+  clearTimeout(draftTimer); draftTimer = 0;
+  try {
+    const r = await queue(() => py("designs.py", { action: "revert", slug: DOC_SLUG }));
+    DOC = r.design; DIRTY = true; panelSig = "";
+    if (selLayer() == null) setp("sel", "");
+    await loadList();
+    renderAll();
+    toast("Reverted to the original layout — Save to keep it.");
+  } catch (e) { toast("Revert failed: " + errMsg(e), { err: true }); }
+}
+async function doCopy(action, name) {
+  if (!DOC) return;
+  if (action === "save_as") { clearTimeout(draftTimer); draftTimer = 0; } else await flushDraft();
+  try {
+    const r = await queue(() => py("designs.py", { action, slug: DOC_SLUG, design: JSON.stringify(DOC), name: name || "" }));
+    await loadList();
+    if (action === "save_as") { DIRTY = false; }
+    P.set("dlg", ""); P.set("vname", ""); P.set("sel", "");
+    setp("d", r.slug);
+    toast((action === "save_as" ? "Variant saved: " : "Duplicated: ") + esc(r.design.name));
+  } catch (e) { toast("Failed: " + errMsg(e), { err: true }); }
+}
+async function doExport() {
+  if (!DOC) return;
+  toast('<span class="spin"></span> Rendering PNG…', { sticky: true });
+  try {
+    await flushDraft();
+    const r = await py("export_png.py", { slug: DOC_SLUG, scale: "2", draft: "true" }, { key: "export" });
+    const u0 = url(r.png), u = u0 + (u0.indexOf("?") >= 0 ? "&" : "?") + "t=" + Date.now();
+    toast(`Exported ${r.width}×${r.height} → <code>${esc(r.png.split("/").slice(-2).join("/"))}</code> <a href="${esc(u)}" target="_blank" rel="noopener">Open</a> <a href="${esc(u)}" download="${esc(DOC_SLUG)}.png">Download</a>`, { ms: 12000 });
+  } catch (e) { toast("Export failed: " + errMsg(e), { err: true }); }
+}
+
+/* ============================================================ right panel */
+const ICON = {
+  eye: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>',
+  eyeoff: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 2l12 12M6.6 3.7A6.6 6.6 0 0 1 8 3.5c4.1 0 6.5 4.5 6.5 4.5a11 11 0 0 1-2 2.6M4 5.2A11.3 11.3 0 0 0 1.5 8S3.9 12.5 8 12.5c.9 0 1.7-.2 2.4-.5"/></svg>',
+  lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>',
+  unlock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7"/></svg>',
+};
+const KIND = { image: "▣", text: "T", rect: "■", polygon: "◆", svg: "∿" };
+const FILTERS = [["none", "None"], ["bw", "Black & white"], ["contrast", "Contrast only"], ["sketch", "Sketch"]];
+const BLENDS = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "difference"];
+const SWAPNOTE = { mask: "Swapped photos keep this layer's shape.", cutout: "Swapped photos are cut out (sky removed).", sketch: "Swapped photos become a pencil sketch.", free: "Swapped photos fill the box." };
+
+function fld(label, inner, cls) { return `<label class="f${cls ? " " + cls : ""}"><span>${label}</span>${inner}</label>`; }
+function inp(k, v, t, extra) { return `<input class="in" data-k="${k}" data-t="${t || "str"}" value="${esc(v)}" ${extra || ""}>`; }
+function numIn(k, v, step) { return inp(k, r3(num(v)), "num", `type="number" step="${step || 0.1}"`); }
+function sel(k, v, opts, t) { return `<select class="in" data-k="${k}" data-t="${t || "str"}">${opts.map(o => { const [val, lab] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(val)}"${String(v) === String(val) ? " selected" : ""}>${esc(lab)}</option>`; }).join("")}</select>`; }
+function colorIn(k, v) { return `<div class="colr"><input type="color" data-k="${k}" data-t="color" value="${esc(/^#[0-9a-f]{6}$/i.test(v || "") ? v : "#000000")}">${inp(k, v || "", "color")}</div>`; }
+function rng(k, v, min, max, step) { return `<div class="rng"><input type="range" data-k="${k}" data-t="num" min="${min}" max="${max}" step="${step}" value="${esc(num(v))}"><output>${r3(num(v))}</output></div>`; }
+
+function renderPanel() {
+  const body = $("#panelBody");
+  const d = gp("d", "");
+  const sig = JSON.stringify([d, DOC_SLUG, gp("sel", ""), DOC ? DOC.layers.length : 0]);
+  if (sig === panelSig) return;
+  panelSig = sig;
+  const top = body.scrollTop;
+  if (d.startsWith("pin:")) { body.innerHTML = pinPanel(d.slice(4)); wirePanel(body); return; }
+  if (!DOC) { body.innerHTML = ""; return; }
+  const L = selLayer();
+  let h = `<div class="sec"><h3>Layers <span class="sp">${DOC.layers.length}</span></h3><div class="layers" id="layerList">`;
+  for (const x of sortedLayers(DOC).reverse()) {
+    h += `<div class="lr${x.id === gp("sel", "") ? " on" : ""}${x.visible === false ? " hidden" : ""}" draggable="true" data-id="${esc(x.id)}">` +
+      `<span class="grip" title="Drag to reorder">⋮⋮</span>` +
+      `<button class="ib${x.visible === false ? "" : " act"}" data-act="eye" title="${x.visible === false ? "Show" : "Hide"}">${x.visible === false ? ICON.eyeoff : ICON.eye}</button>` +
+      `<button class="ib${x.locked ? " act" : ""}" data-act="lock" title="${x.locked ? "Unlock" : "Lock"}">${x.locked ? ICON.lock : ICON.unlock}</button>` +
+      `<span class="kind">${KIND[x.kind] || "?"}</span><span class="ln">${esc(x.name || x.id)}</span></div>`;
+  }
+  h += "</div></div>";
+  h += L ? layerProps(L) : canvasProps();
+  body.innerHTML = h;
+  body.scrollTop = top;
+  wirePanel(body);
+}
+function pinPanel(n) {
+  const p = (LIST.pins || []).find(x => x.n === n);
+  const ds = LIST.designs.filter(e => e.design.pin === n);
+  let h = `<div class="sec"><h3>Original pin ${esc(n)}</h3><div class="note"><b>${esc(pinTitle(n))}</b><br>`;
+  if (p) h += `${p.w}×${p.h}px · <code>${esc(p.name)}</code><br>Copy: <code>${esc(p.file)}</code>`;
+  h += "</div></div>";
+  if (ds.length) {
+    h += `<div class="sec"><h3>Designs</h3><div class="acts">` + ds.map(e => `<button class="btn small" data-open="${esc(e.slug)}">${esc(e.name)}</button>`).join("") + "</div></div>";
+  } else {
+    h += `<div class="sec"><div class="note">Not recreated yet — Phase 1 covers pins 01, 03 and 04. New pins use the same design JSON (see the app's SKILL.md).</div></div>`;
+  }
+  return h;
+}
+function canvasProps() {
+  const c = DOC.canvas;
+  return `<div class="sec"><h3>Canvas</h3><div class="grid">` +
+    fld("Background", colorIn("canvas.background", c.background), "full") +
+    `</div><p class="note">${c.width}×${c.height}px · ${esc(c.aspect || "")}<br>Source: <code>${esc(DOC.source || "")}</code>` +
+    (DOC.variant_of ? `<br>Variant of <code>${esc(DOC.variant_of)}</code>` : "") +
+    (DOC.notes ? `<br>${esc(DOC.notes)}` : "") +
+    `<br>File: <code>${esc(LIST.root + "/designs/" + DOC_SLUG + ".json")}</code></p>` +
+    `<p class="note">Click a layer on the canvas or in the list to edit it. Arrow keys nudge, Shift+drag a corner to scale freely, Shift+rotate snaps to 15°.</p>` +
+    `<div class="acts"><button class="btn small" data-act="rebuild">Rebuild all from the originals…</button></div></div>`;
+}
+function layerProps(L) {
+  let h = `<div class="sec"><h3>${esc(L.kind)} layer</h3><div class="grid">` +
+    fld("Name", inp("name", L.name || ""), "full") +
+    `</div></div><div class="sec"><h3>Position <span class="sp">% of canvas</span></h3><div class="grid g3">` +
+    fld("X", numIn("x", L.x)) + fld("Y", numIn("y", L.y)) + fld("Rotate°", numIn("rotation", L.rotation, 1)) +
+    fld("W", numIn("w", L.w)) + fld("H", numIn("h", L.h)) + `<span></span>` +
+    `</div><div class="grid" style="margin-top:8px">` +
+    fld("Opacity", rng("opacity", L.opacity == null ? 1 : L.opacity, 0, 1, 0.01), "full") +
+    fld("Blend", sel("blend", L.blend || "normal", BLENDS), "full") +
+    `</div></div>`;
+  if (L.kind === "image") {
+    const c = L.crop || {};
+    h += `<div class="sec"><h3>Image</h3><div class="acts"><button class="btn small primary" data-act="swap">Swap image…</button>` +
+      `<button class="btn small" data-act="resetimg"${L.src === L.src_orig ? " disabled" : ""}>Reset image</button></div>` +
+      `<p class="note" style="margin:0 0 8px">${SWAPNOTE[L.swap || "mask"] || ""}<br><code>${esc((L.src || "").split("/").slice(-1)[0])}</code></p><div class="grid">` +
+      fld("Fit", sel("fit", L.fit || "fill", [["fill", "Stretch to box"], ["cover", "Cover (crop)"], ["contain", "Contain"]])) +
+      fld("Filter", sel("filter", L.filter || "none", FILTERS)) +
+      fld("Crop X", rng("crop.x", num(c.x, 50), 0, 100, 1), "full") +
+      fld("Crop Y", rng("crop.y", num(c.y, 50), 0, 100, 1), "full") +
+      fld("Zoom", rng("crop.scale", num(c.scale, 1), 0.2, 4, 0.01), "full") +
+      fld("Contrast", rng("contrast", num(L.contrast, 1), 0.3, 2.5, 0.01), "full") +
+      fld("Brightness", rng("brightness", num(L.brightness, 1), 0.3, 1.8, 0.01), "full") +
+      `</div></div>`;
+  } else if (L.kind === "text") {
+    const fonts = Object.values(FONTS).map(f => [f.id, f.label + (f.available ? "" : " (missing)")]);
+    h += `<div class="sec"><h3>Text</h3><div class="grid">` +
+      fld("Text", `<textarea class="in" data-k="text" data-t="str" rows="3">${esc(L.text || "")}</textarea>`, "full") +
+      fld("Font", sel("font", L.font, fonts), "full") +
+      fld("Fit", sel("fit", L.fit || "none", [["none", "Font size"], ["stretch", "Stretch to box"]])) +
+      fld("Size %H", numIn("size", L.size, 0.05) .replace("<input", L.fit === "stretch" ? "<input disabled" : "<input")) +
+      fld("Colour", colorIn("color", L.color), "full") +
+      fld("Tracking", numIn("tracking", L.tracking, 5)) + fld("Line height", numIn("line_height", L.line_height, 0.05)) +
+      fld("Align", sel("align", L.align || "left", ["left", "center", "right"])) +
+      fld("Effect", sel("effect", L.effect || "none", [["none", "None"], ["inline", "Inline"]])) +
+      (L.effect === "inline" ? fld("Inline colour", colorIn("effect_color", L.effect_color), "full") : "") +
+      `</div></div>`;
+  } else {
+    h += `<div class="sec"><h3>${L.kind === "svg" ? "Shape" : "Fill"}</h3><div class="grid">` + fld("Colour", colorIn("color", L.color), "full") + `</div>` +
+      (L.preset === "grain" ? `<p class="note">Paper grain — use Opacity for strength.</p>` : "") + `</div>`;
+  }
+  return h;
+}
+function setPath(obj, path, val) {
+  const ks = path.split(".");
+  let o = obj;
+  for (let i = 0; i < ks.length - 1; i++) { if (typeof o[ks[i]] !== "object" || o[ks[i]] == null) o[ks[i]] = {}; o = o[ks[i]]; }
+  o[ks[ks.length - 1]] = val;
+}
+function wirePanel(body) {
+  body.querySelectorAll("[data-open]").forEach(b => b.onclick = () => setp("d", b.dataset.open));
+  const rb = body.querySelector('[data-act="rebuild"]');
+  if (rb) rb.onclick = rebuildAll;
+  body.querySelectorAll("[data-k]").forEach(el => {
+    const handler = ev => {
+      const k = el.dataset.k, t = el.dataset.t;
+      let v = el.value;
+      if (t === "num") { if (v === "" || !Number.isFinite(parseFloat(v))) return; v = parseFloat(v); }
+      if (t === "color" && !/^#[0-9a-f]{6}$/i.test(v)) return;
+      const out = el.parentElement.querySelector("output");
+      if (out) out.textContent = r3(v);
+      if (t === "color") { const twin = el.parentElement.querySelectorAll("[data-k]"); twin.forEach(o => { if (o !== el) o.value = v; }); }
+      if (k.startsWith("canvas.")) { DOC.canvas[k.slice(7)] = v; edit(() => {}); return; }
+      if (k === "filter") { applyFilter(v); return; }
+      const structural = ["fit", "effect", "name", "font"].includes(k) && ev.type === "change";
+      edit(L => { if (L) setPath(L, k, v); }, { panel: structural && k !== "name" });
+      if (k === "name") { const row = body.querySelector(`.lr[data-id="${CSS.escape(gp("sel", ""))}"] .ln`); if (row) row.textContent = v; }
+    };
+    const isSel = el.tagName === "SELECT";
+    el.addEventListener(isSel ? "change" : "input", handler);
+  });
+  const list = body.querySelector("#layerList");
+  if (!list) return;
+  list.querySelectorAll(".lr").forEach(row => {
+    const id = row.dataset.id;
+    row.addEventListener("click", ev => {
+      const b = ev.target.closest("[data-act]");
+      const L = DOC.layers.find(x => x.id === id);
+      if (b && L) {
+        if (b.dataset.act === "eye") L.visible = L.visible === false;
+        else L.locked = !L.locked;
+        panelSig = "";
+        edit(() => {}, { panel: true });
+        return;
+      }
+      setp("sel", gp("sel", "") === id ? "" : id);
+    });
+    row.addEventListener("dragstart", ev => { ev.dataTransfer.setData("text/plain", id); ev.dataTransfer.effectAllowed = "move"; row.style.opacity = ".5"; });
+    row.addEventListener("dragend", () => { row.style.opacity = ""; });
+    row.addEventListener("dragover", ev => {
+      ev.preventDefault();
+      const r = row.getBoundingClientRect();
+      const below = ev.clientY > r.top + r.height / 2;
+      row.classList.toggle("dropb", below); row.classList.toggle("dropt", !below);
+    });
+    row.addEventListener("dragleave", () => row.classList.remove("dropb", "dropt"));
+    row.addEventListener("drop", ev => {
+      ev.preventDefault();
+      const below = row.classList.contains("dropb");
+      row.classList.remove("dropb", "dropt");
+      const from = ev.dataTransfer.getData("text/plain");
+      if (!from || from === id) return;
+      reorder(from, id, below);
+    });
+  });
+}
+function reorder(fromId, targetId, below) {
+  const top = sortedLayers(DOC).reverse();
+  const moving = top.find(L => L.id === fromId);
+  const rest = top.filter(L => L.id !== fromId);
+  let i = rest.findIndex(L => L.id === targetId);
+  if (i < 0 || !moving) return;
+  if (below) i += 1;
+  rest.splice(i, 0, moving);
+  const bottomUp = rest.reverse();
+  bottomUp.forEach((L, k) => { L.z = k; });
+  DOC.layers = bottomUp;
+  panelSig = "";
+  edit(() => {}, { panel: true });
+}
+
+/* ---------- filters + image swapping */
+async function applyFilter(v) {
+  const L = selLayer();
+  if (!L) return;
+  if (v === "sketch" && L.src === L.src_raw && L.swap !== "sketch" && L.src_raw) {
+    toast('<span class="spin"></span> Sketching…', { sticky: true });
+    try {
+      const r = await py("sketch.py", { src: L.src_raw }, { key: "sketch" });
+      L.src = r.png;
+      toast("Sketch filter applied.");
+    } catch (e) { toast("Sketch failed: " + errMsg(e), { err: true }); return; }
+  } else if (v !== "sketch" && L.filter === "sketch" && L.src_raw && L.swap !== "sketch") {
+    L.src = L.src_raw;
+  }
+  edit(() => { L.filter = v; }, { panel: true });
+}
+function resetImage() {
+  edit(L => {
+    L.src = L.src_orig; L.src_raw = L.src_orig; L.mask = L.mask_orig || "";
+    L.fit = "fill"; L.crop = { x: 50, y: 50, scale: 1 };
+  }, { panel: true });
+}
+async function applySwap(photoPath) {
+  const id = gp("swap", "");
+  const L = DOC && DOC.layers.find(x => x.id === id);
+  if (!L) return;
+  const W = num(DOC.canvas.width), H = num(DOC.canvas.height);
+  const mode = L.swap || "mask";
+  toast('<span class="spin"></span> Preparing the photo…', { sticky: true });
+  try {
+    if (mode === "cutout") {
+      const r = await py("cutout.py", { src: photoPath, mode: "auto", bw: L.filter === "bw" ? "true" : "false" }, { key: "swap" });
+      const cx = num(L.x) + num(L.w) / 2, bottom = num(L.y) + num(L.h);
+      const h = num(L.h), w = h / 100 * H * (r.width / r.height) / W * 100;
+      Object.assign(L, { src: r.png, src_raw: r.png, mask: "", fit: "fill", crop: { x: 50, y: 50, scale: 1 }, x: r3(cx - w / 2), y: r3(bottom - h), w: r3(w), h: r3(h) });
+    } else if (mode === "sketch") {
+      const r = await py("sketch.py", { src: photoPath }, { key: "swap" });
+      const cx = num(L.x) + num(L.w) / 2, bottom = num(L.y) + num(L.h);
+      const w = num(L.w), h = w / 100 * W / (r.width / r.height) / H * 100;
+      Object.assign(L, { src: r.png, src_raw: r.raw, mask: "", fit: "fill", filter: "sketch", crop: { x: 50, y: 50, scale: 1 }, x: r3(cx - w / 2), y: r3(bottom - h), w: r3(w), h: r3(h) });
+    } else {
+      const r = await py("prepare_photo.py", { src: photoPath }, { key: "swap" });
+      let src = r.path;
+      if (L.filter === "sketch") src = (await py("sketch.py", { src: r.path }, { key: "swap" })).png;
+      Object.assign(L, { src, src_raw: r.path, fit: "cover", crop: { x: 50, y: 50, scale: 1 } });
+      if (mode === "free") L.mask = "";
+    }
+    $("#toast").hidden = true;
+    P.set("swap", "");
+    edit(() => {}, { panel: true });
+  } catch (e) { toast("Swap failed: " + errMsg(e), { err: true }); }
+}
+
+/* ---------- swap browser (open state + folder live in the URL) */
+let SW = { folder: "", photos: [], next: null, total: 0, loading: false, err: "" };
+async function loadSwapFolder(folder, more) {
+  if (more && SW.loading) return;
+  if (!more) SW = { folder, photos: [], next: null, total: 0, loading: true, err: "" };
+  else SW.loading = true;
+  const mine = SW;
+  paintSwapGrid();
+  try {
+    let r;
+    for (let i = 0; i < 30; i++) {   // a big folder's first scan answers "indexing" until its date index is built
+      r = await py("list_folder.py", { path: folder, offset: String(more ? mine.next : 0), count: "60" }, { key: "swapdir" });
+      if (mine !== SW || r.status !== "indexing") break;
+      $("#swapInfo").textContent = `Reading dates… ${r.indexed} of ${r.total}`;
+    }
+    if (mine !== SW) return;
+    SW.photos = SW.photos.concat(r.photos); SW.next = r.next_offset; SW.total = r.total;
+  } catch (e) {
+    if (mine !== SW) return;
+    SW.err = (e && e.message) || String(e);
+  }
+  SW.loading = false;
+  paintSwapGrid();
+}
+function paintSwapGrid() {
+  const g = $("#swapGrid");
+  if (SW.err) g.innerHTML = `<div class="msg" style="grid-column:1/-1">${esc(SW.err)}</div>`;
+  else if (!SW.photos.length) g.innerHTML = `<div class="msg" style="grid-column:1/-1">${SW.loading ? "Reading the folder… first look at a big folder makes thumbnails." : "No photos here."}</div>`;
+  else g.innerHTML = SW.photos.map((p, i) => `<button class="ph" data-i="${i}" title="${esc(p.path)}"><div class="im"><img loading="lazy" alt="" src="${esc(url(p.thumb))}"></div><div class="m">#${p.n} · ${esc((p.date || "").slice(0, 10))}${p.place ? " · " + esc(p.place) : ""}</div></button>`).join("");
+  g.querySelectorAll(".ph").forEach(b => b.onclick = () => applySwap(SW.photos[+b.dataset.i].path));
+  $("#swapInfo").textContent = SW.loading ? "Loading…" : SW.total ? `${SW.photos.length} of ${SW.total} photos · ${SW.folder}` : "";
+  $("#swapMore").hidden = SW.next == null || SW.loading;
+}
+function renderSwap() {
+  const id = gp("swap", "");
+  const L = id && DOC ? DOC.layers.find(x => x.id === id) : null;
+  $("#swap").hidden = !L;
+  if (!L) return;
+  $("#swapTitle").textContent = `Swap image — ${L.name || L.id}`;
+  const folder = gp("sdir", LIST.bali_dir || "");
+  const di = $("#swapDir");
+  if (document.activeElement !== di) di.value = folder;
+  if (SW.folder !== folder) loadSwapFolder(folder, false);
+}
+function renderVariantDlg() {
+  const open = gp("dlg", "") === "variant" && !!DOC;
+  const dlg = $("#variantDlg"), wasHidden = dlg.hidden;
+  dlg.hidden = !open;
+  const v = $("#vname");
+  if (open && document.activeElement !== v) v.value = gp("vname", DOC.name.replace(/ — .*$/, "") + " variant");
+  if (open && wasHidden) setTimeout(() => { v.focus(); v.select(); }, 0);
+}
+async function rebuildAll() {
+  if (!confirm("Rebuild every layer from the original pins and Bali photos? This overwrites the 6 shipped designs (your own variants stay).")) return;
+  clearTimeout(draftTimer); draftTimer = 0;
+  await writeQ;
+  $("#app").hidden = true;
+  try {
+    await runSetup(true);
+    await loadList();
+    DOC_SLUG = ""; DOC = null; failedSlug = ""; alphaCache.clear(); inkCache.clear();
+  } catch (e) { toast("Rebuild failed: " + errMsg(e), { err: true }); }
+  $("#boot").hidden = true;
+  $("#app").hidden = false;
+  onParams();
+}
+
+/* ============================================================ static wiring */
+function wireStatic() {
+  $("#bSave").onclick = doSave;
+  $("#bDiscard").onclick = doDiscard;
+  $("#bRevert").onclick = doRevert;
+  $("#bDup").onclick = () => doCopy("duplicate", "");
+  $("#bExport").onclick = doExport;
+  $("#bVariant").onclick = () => setp("dlg", gp("dlg", "") === "variant" ? "" : "variant");
+  $("#vCancel").onclick = () => { P.set("dlg", ""); P.set("vname", ""); };
+  $("#vCreate").onclick = () => doCopy("save_as", $("#vname").value.trim() || (DOC ? DOC.name + " variant" : "variant"));
+  $("#vname").addEventListener("input", ev => setp("vname", ev.target.value));
+  $("#vname").addEventListener("keydown", ev => { if (ev.key === "Enter") $("#vCreate").click(); });
+  for (const b of $("#cmpSeg").children) b.onclick = () => setp("cmp", b.dataset.v);
+  $("#co").addEventListener("input", ev => setp("co", ev.target.value));
+  $("#swapClose").onclick = () => P.set("swap", "");
+  $("#swap").addEventListener("pointerdown", ev => { if (ev.target.id === "swap") P.set("swap", ""); });
+  $("#swapLoad").onclick = () => setp("sdir", $("#swapDir").value.trim());
+  $("#swapDir").addEventListener("keydown", ev => { if (ev.key === "Enter") $("#swapLoad").click(); });
+  $("#swapBali").onclick = () => setp("sdir", LIST.bali_dir || "");
+  $("#swapMore").onclick = () => loadSwapFolder(SW.folder, true);
+  $("#swapPick").onclick = () => $("#filePick").click();
+  $("#filePick").addEventListener("change", ev => {
+    const f = ev.target.files && ev.target.files[0];
+    ev.target.value = "";
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = async () => {
+      toast('<span class="spin"></span> Importing ' + esc(f.name) + "…", { sticky: true });
+      try {
+        const r = await py("import_file.py", { name: f.name, data: String(rd.result) }, { key: "import" });
+        await applySwap(r.path);
+      } catch (e) { toast("Import failed: " + errMsg(e), { err: true }); }
+    };
+    rd.readAsDataURL(f);
+  });
+  MAIN.frame.addEventListener("pointerdown", onDown);
+  MAIN.frame.addEventListener("pointermove", onMove);
+  MAIN.frame.addEventListener("pointerup", onUp);
+  MAIN.frame.addEventListener("pointercancel", onUp);
+  $("#panelBody").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-act]");
+    if (!b || b.closest(".lr")) return;
+    if (b.dataset.act === "swap") setp("swap", gp("sel", ""));
+    else if (b.dataset.act === "resetimg") resetImage();
+  });
+  window.addEventListener("keydown", ev => {
+    const tag = (ev.target.tagName || "").toLowerCase();
+    const typing = tag === "input" || tag === "textarea" || tag === "select";
+    if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "s") { ev.preventDefault(); doSave(); return; }
+    if (ev.key === "Escape") {
+      if (gp("swap", "")) P.set("swap", "");
+      else if (gp("dlg", "")) P.set("dlg", "");
+      else if (!typing && gp("sel", "")) P.set("sel", "");
+      return;
+    }
+    if (typing) return;
+    const L = selLayer();
+    const step = ev.shiftKey ? 1 : 0.1;
+    const mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[ev.key];
+    if (mv && L && !L.locked) {
+      ev.preventDefault();
+      edit(x => { x.x = r3(num(x.x) + mv[0]); x.y = r3(num(x.y) + mv[1]); });
+      clearTimeout(window._nudge);
+      window._nudge = setTimeout(() => { panelSig = ""; renderPanel(); }, 400);
+    }
+  });
+  window.addEventListener("beforeunload", () => { if (draftTimer) saveDraft(); });
+}
+
+boot();
+</script>
+</body>
+</html>

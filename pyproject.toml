@@ -1,0 +1,11 @@
+[project]
+name = "pin-remake"
+version = "0.1.0"
+description = "Layered poster editor that rebuilds Pinterest pins as live HTML/CSS/SVG layers."
+requires-python = ">=3.10"
+# numpy + pillow come from fused-render's bundled set; HEIC goes through macOS `sips`
+# (pillow-heif is used automatically if it is ever installed).
+dependencies = []
+
+[tool.uv]
+package = false
